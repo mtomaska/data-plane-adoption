@@ -1,6 +1,6 @@
 [id="adopting-networker-services-to-the-data-plane_{context}"]
 
-= Adopting Networker services to the {rhos_acro} data plane
+= Adopting Networker and Controller services to the {rhos_acro} data plane
 
 Adopt the Networker nodes in your existing {rhos_prev_long} deployment to the {rhos_long} data plane. You decide which services you want to run on the Networker nodes, and create a separate `OpenStackDataPlaneNodeSet` custom resource (CR) for the Networker nodes. You might also decide to implement the following options if they apply to your environment:
 
@@ -10,28 +10,35 @@ Adopt the Networker nodes in your existing {rhos_prev_long} deployment to the {r
 
 * Optional: You can run the `neutron-dhcp` service on your Networker nodes instead of your Compute nodes. You might not need to use `neutron-dhcp` with OVN, unless your deployment uses DHCP relays, or advanced DHCP options that are supported by dnsmasq but not by the OVN DHCP implementation.
 
+Adopt each Controller node in your existing {rhos_prev_long} deployment to the {rhos_long} when your Controller node is set as an OVN chassis gateway. Any Controller node with
+parameter set to `enable-chassis-as-gw` is considered OVN gateway chassis. In this case, each Controller node will become a edpm networker node after adoption.
+
+FIXME - See if there is a need for a command example on how to check if a Controller has `enable-chassis-as-gw` set?
+
 .Prerequisites
 
 * Define the shell variable. The following value is an example
-from a single node standalone {OpenStackPreviousInstaller} deployment:
+from a multi node {OpenStackPreviousInstaller} deployment:
 +
 [subs=+quotes]
 ----
 declare -A networkers
-networkers=(
-  ["standalone.localdomain"]="192.168.122.100"
+networkers+=(
+  ["networker-0.localdomain"]="192.168.122.100"
+  ["networker-1.localdomain"]="192.168.122.101"
+  ["controller-0.localdomain"]="192.168.122.102"
   # ...
 )
 ----
 +
-** Replace `["standalone.localdomain"]="192.168.122.100"` with the name and IP address of the Networker node.
+** Replace `["<node-name>"]="192.168.122.100"` with the name and IP address of the corresponding Networker or Controller node.
 
 .Procedure
 
-. Deploy the `OpenStackDataPlaneNodeSet` CR for your Networker nodes:
+. Deploy the `OpenStackDataPlaneNodeSet` CR for your nodes:
 +
 [NOTE]
-You can reuse most of the `nodeTemplate` section from the `OpenStackDataPlaneNodeSet` CR that is designated for your Compute nodes. You can omit some of the variables because of the limited set of services that are running on Networker nodes.
+You can reuse most of the `nodeTemplate` section from the `OpenStackDataPlaneNodeSet` CR that is designated for your Compute nodes. You can omit some of the variables because of the limited set of services that are running on Networker/Controllers nodes.
 +
 [source,yaml]
 ----
@@ -62,13 +69,28 @@ spec:
     - name: ANSIBLE_FORCE_COLOR
       value: "True"
   nodes:
-    standalone:
-      hostName: standalone
+    networker-0:
+      hostName: networker-0
       ansible:
-        ansibleHost: ${networkers[standalone.localdomain]}
+        ansibleHost: ${networkers[networker-0.localdomain]}
       networks:
       - defaultRoute: true
-        fixedIP: ${networkers[standalone.localdomain]}
+        fixedIP: ${networkers[networker-0.localdomain]}
+        name: ctlplane
+        subnetName: subnet1
+      - name: internalapi
+        subnetName: subnet1
+      - name: storage
+        subnetName: subnet1
+      - name: tenant
+        subnetName: subnet1
+    networker-1:
+      hostName: networker-1
+      ansible:
+        ansibleHost: ${networkers[networker-1.localdomain]}
+      networks:
+      - defaultRoute: true
+        fixedIP: ${networkers[networker-1.localdomain]}
         name: ctlplane
         subnetName: subnet1
       - name: internalapi

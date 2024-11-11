@@ -14,6 +14,7 @@ Your `Networker` nodes will also become external nodes.
 In many deployments being adopted the `Controller` nodes will require some
 thought because you have many {OpenShiftShort} nodes where the Controller services
 could run, and you have to decide which ones you want to use, how you are going to use them, and make sure those nodes are ready to run the services.
+In some cases, your `Controller` could also become external nodes.
 
 In most deployments running {OpenStackShort} services on `master` nodes can have a
 seriously adverse impact on the {OpenShiftShort} cluster, so it is recommended that you place {OpenStackShort} services on non `master` nodes.
